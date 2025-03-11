@@ -8,13 +8,11 @@
 
         public DbSet<County> Counties { get; set; }
         public DbSet<PermitType> PermitTypes { get; set; }
-        public DbSet<FormData> FormSubmissions { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<Address> Addresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<FormData>()
-                .HasKey(form => form.Id);
-
             modelBuilder.Entity<County>().HasData(
                 new County { CountyId = 1, CountyName = "Hillsborough" },
                 new County { CountyId = 2, CountyName = "Pasco" },
@@ -27,6 +25,16 @@
                 new PermitType { PermitTypeId = 1, PermitTypeName = "Water Use Permit" },
                 new PermitType { PermitTypeId = 2, PermitTypeName = "Environmental Resource Type" }
             );
+
+            modelBuilder.Entity<Address>()
+            .HasIndex(a => new { a.AddressLine1, a.City, a.State, a.ZipCode })
+            .IsUnique(); // Prevent duplicate addresses
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Address)
+                .WithOne()
+                .HasForeignKey<User>(u => u.AddressId)
+                .OnDelete(DeleteBehavior.Cascade);  // Cascade delete if needed
         }
     }
 }

@@ -12,7 +12,6 @@ namespace Permit_App.Controllers;
 [Route("api/permit")]
 public class PermitController : ControllerBase
 {
-    private static List<FormData> SubmittedForms = new List<FormData>();
     private readonly AppDbContext _context;
 
     public PermitController(AppDbContext context)
@@ -35,29 +34,45 @@ public class PermitController : ControllerBase
         return Ok(permitTypes);
     }
 
-    [HttpPost("submit")]
-    public async Task<IActionResult> SubmitForm([FromBody] FormData formData)
+    [HttpGet]
+    public async Task<IActionResult> GetAllUsers()
     {
-        if (formData == null)
-            return BadRequest("Invalid form data.");
+        var users = await _context.Users.Include(u => u.Address).ToListAsync();
+        return Ok(users);
+    }
 
-        _context.FormSubmissions.Add(formData);
+    [HttpPost("submit")]
+    public async Task<IActionResult> CreateUser([FromBody] User user)
+    {
+        if (user == null || user.Address == null)
+            return BadRequest("User and Address are required.");
+
+        // Check if the address already exists
+        var existingAddress = await _context.Addresses
+            .FirstOrDefaultAsync(a =>
+                a.AddressLine1 == user.Address.AddressLine1 &&
+                a.AddressLine2 == user.Address.AddressLine2 &&
+                a.City == user.Address.City &&
+                a.State == user.Address.State &&
+                a.ZipCode == user.Address.ZipCode &&
+                a.Country == user.Address.Country);
+
+        if (existingAddress != null)
+            return BadRequest("Address already registered");
+
+        _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        // Query the saved values to check what has been saved
-        var savedFormData = await _context.FormSubmissions
-                                           .Where(f => f.Id == formData.Id)  // Fetch the specific saved record
-                                           .FirstOrDefaultAsync();
+        return CreatedAtAction(nameof(GetUser), new { id = user.UserId }, user);
+    }
 
-        // Log or print to console for debugging
-        if (!string.IsNullOrEmpty(savedFormData.UserName))
-            Console.WriteLine($"Saved FormData: Username = {savedFormData.UserName},Address = {savedFormData.AddressLine1}, " +
-                        $"City = {savedFormData.City}, State = {savedFormData.State}, " +
-                        $"ZipCode = {savedFormData.ZipCode}, Country = {savedFormData.Country}, " +
-                        $"County = {savedFormData.CountyId}, PermitType = {savedFormData.PermitTypeId}");
-        else
-            Console.WriteLine("Form does not have valid data");
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(int id)
+    {
+        var user = await _context.Users.Include(u => u.Address).FirstOrDefaultAsync(u => u.UserId == id);
+        if (user == null)
+            return NotFound();
 
-            return Ok(new { message = "Form submitted successfully!", data = formData });
+        return Ok(user);
     }
 }
