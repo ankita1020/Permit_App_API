@@ -63,6 +63,8 @@ public class PermitController : ControllerBase
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        //Call the USPSService to validate the address and update the User table.
+
         return CreatedAtAction(nameof(GetUser), new { id = user.UserId }, user);
     }
 

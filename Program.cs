@@ -14,6 +14,8 @@ builder.Services.AddCors(options =>
                         .AllowAnyMethod()
                         .AllowAnyHeader());
 });
+builder.Services.AddHttpClient<UspsService>();
+builder.Services.AddScoped<UspsService>();
 
 var app = builder.Build();
 

@@ -17,5 +17,6 @@ namespace Permit_App.Models
         public int AddressId { get; set; }
         [ForeignKey("AddressId")]
         public Address Address { get; set; }
+        public string AddressVerified { get; set; } = "N";
     }
 }
